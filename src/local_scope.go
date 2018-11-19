@@ -61,6 +61,6 @@ func f2() {
    print(a)
 }
 
-GOG
+//GOG
 
 */
