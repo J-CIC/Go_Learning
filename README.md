@@ -54,7 +54,7 @@ go run hello_world.go
     <summary>Go代码风格格式化</summary>
 
 ```bash
-gofmt -m *.go
+gofmt -w *.go
 gofmt <foldername>
 ```
 </details>
