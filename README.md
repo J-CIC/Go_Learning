@@ -1,6 +1,8 @@
 Go入门学习
 ===
 
+内容参考自: [《The Way to Go》](https://go.fdos.me/)
+
 目录
 ---
 <details>
@@ -175,6 +177,75 @@ func (p *pp) doPrintf(format string, a []interface{}) {
         }
         p.buf.WriteByte(')')
     }
+}
+```
+</details>
+
+<details>
+    <summary>defer推迟执行</summary>
+关键字 defer 允许我们推迟到函数返回之前（或任意位置执行 return 语句之后）一刻才执行某个语句或函数（为什么要在返回之后才执行这些语句？因为 return 语句同样可以包含一些操作，而不是单纯地返回某个值）。
+
+关键字 defer 的用法类似于面向对象编程语言 Java 和 C# 的 finally 语句块，它一般用于释放某些已分配的资源。
+
+```go
+// open a file  
+defer file.Close()
+
+// open a database connection  
+defer disconnectFromDB()
+
+// 甚至用来调试函数
+package main
+
+import "fmt"
+
+func trace(s string)   { fmt.Println("entering:", s) }
+func untrace(s string) { fmt.Println("leaving:", s) }
+
+func a() {
+    trace("a")
+    defer untrace("a")
+    fmt.Println("in a")
+}
+
+func b() {
+    trace("b")
+    defer untrace("b")
+    fmt.Println("in b")
+    a()
+}
+
+func main() {
+    b()
+}
+
+// 更简洁的版本
+package main
+
+import "fmt"
+
+func trace(s string) string {
+    fmt.Println("entering:", s)
+    return s
+}
+
+func un(s string) {
+    fmt.Println("leaving:", s)
+}
+
+func a() {
+    defer un(trace("a"))
+    fmt.Println("in a")
+}
+
+func b() {
+    defer un(trace("b"))
+    fmt.Println("in b")
+    a()
+}
+
+func main() {
+    b()
 }
 ```
 </details>
