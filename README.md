@@ -12,7 +12,7 @@ Go入门学习
 
 - [Go及环境相关](#Go及环境相关)
 - [与其他语言不同之处](#与其他语言不同之处)
-
+- [数组与切片](#数组与切片)
 <!-- /TOC -->
 
 </details>
@@ -246,6 +246,49 @@ func b() {
 
 func main() {
     b()
+}
+```
+</details>
+
+## 数组与切片
+
+<details>
+    <summary>容易混淆的声明</summary>
+看代码和运行结果更直观
+
+```go
+package main
+
+import (
+    "fmt"
+    "reflect"
+)
+
+func main() {
+    var type1 = [5]int{1, 2, 3, 4, 5}
+    var type2 = [...]int{1, 2, 3, 4, 5}
+    var type3 = []int{1, 2, 3, 4, 5}
+    type4 := []int{1, 2, 3, 4, 5}
+    var type5 = make([]int, 3, 5)
+    var type6 = new([5]int)[0:3]
+
+    fmt.Printf("%T,%s,%v\n", type1, reflect.TypeOf(type1).Kind(), type1)
+    // [5]int,array,[1 2 3 4 5]
+
+    fmt.Printf("%T,%s,%v\n", type2, reflect.TypeOf(type2).Kind(), type2)
+    // [5]int,array,[1 2 3 4 5]
+
+    fmt.Printf("%T,%s,%v\n", type3, reflect.TypeOf(type3).Kind(), type3)
+    // []int,slice,[1 2 3 4 5]
+
+    fmt.Printf("%T,%s,%v\n", type4, reflect.TypeOf(type4).Kind(), type4)
+    // []int,slice,[1 2 3 4 5]
+
+    fmt.Printf("%T,%s,%v\n", type5, reflect.TypeOf(type5).Kind(), type5)
+    // []int,slice,[0 0 0]
+
+    fmt.Printf("%T,%s,%v\n", type6, reflect.TypeOf(type6).Kind(), type6)
+    // []int,slice,[0 0 0]
 }
 ```
 </details>
