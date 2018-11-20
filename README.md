@@ -9,7 +9,7 @@ Go入门学习
 <!-- TOC -->
 
 - [Go及环境相关](#Go及环境相关)
-
+- [与其他语言不同之处](#与其他语言不同之处)
 
 <!-- /TOC -->
 
@@ -56,5 +56,28 @@ go run hello_world.go
 ```bash
 gofmt -w *.go
 gofmt <foldername>
+```
+</details>
+
+## 与其他语言不同之处
+
+<details>
+    <summary>指针不可运算</summary>
+对于经常导致 C 语言内存泄漏继而程序崩溃的指针运算（所谓的指针算法，如：pointer+2，移动指针指向字符串的字节数或数组的某个位置）是不被允许的。Go 语言中的指针保证了内存安全，更像是 Java、C# 和 VB.NET 中的引用。
+
+因此```c = *p++```在 Go 语言的代码中是不合法的。
+</details>
+
+<details>
+    <summary>命名的返回值</summary>
+可以通过在函数签名中声明返回值的名字，从而省略return中的变量，example：
+
+```go
+func getX2AndX3_2(input int) (x2 int, x3 int) {
+    x2 = 2 * input
+    x3 = 3 * input
+    // return x2, x3
+    return
+}
 ```
 </details>
