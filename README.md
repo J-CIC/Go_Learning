@@ -84,6 +84,7 @@ func getX2AndX3_2(input int) (x2 int, x3 int) {
 
 <details>
     <summary>变长参数和Printf</summary>
+
 ### 同类型的变长参数
 首先看看函数中的语法定义
 
