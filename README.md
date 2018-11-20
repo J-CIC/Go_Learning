@@ -81,3 +81,99 @@ func getX2AndX3_2(input int) (x2 int, x3 int) {
 }
 ```
 </details>
+
+<details>
+    <summary>变长参数和Printf</summary>
+### 同类型的变长参数
+首先看看函数中的语法定义
+
+```go
+/**
+    FunctionType   = "func" Signature .
+    Signature      = Parameters [ Result ] .
+    Result         = Parameters | Type .
+    Parameters     = "(" [ ParameterList [ "," ] ] ")" .
+    ParameterList  = ParameterDecl { "," ParameterDecl } .
+    ParameterDecl  = [ IdentifierList ] [ "..." ] Type .
+*/
+func min(s ...int) int {
+    if len(s)==0 {
+        return 0
+    }
+    min := s[0]
+    for _, v := range s {
+        if v < min {
+            min = v
+        }
+    }
+    return min
+}
+// usage
+result := min(1,5,4,2,4)
+slice := []int{7,9,3,5,1}
+result = min(slice...)
+```
+
+### 不同类型的变长参数(以Printf为例)
+
+```go
+//一个简单的例子
+func typecheck(..,..,values … interface{}) {
+    for _, value := range values {
+        switch v := value.(type) {
+            case int: …
+            case float: …
+            case string: …
+            case bool: …
+            default: …
+        }
+    }
+}
+
+// 例如fmt.Printf()
+// Printf formats according to a format specifier and writes to standard output.
+// It returns the number of bytes written and any write error encountered.
+func Printf(format string, a ...interface{}) (n int, err error) {
+    return Fprintf(os.Stdout, format, a...)
+}
+
+// Fprintf formats according to a format specifier and writes to w.
+// It returns the number of bytes written and any write error encountered.
+func Fprintf(w io.Writer, format string, a ...interface{}) (n int, err error) {
+    p := newPrinter()
+    p.doPrintf(format, a)
+    n, err = w.Write(p.buf)
+    p.free()
+    return
+}
+
+func (p *pp) doPrintf(format string, a []interface{}) {
+    end := len(format)
+    argNum := 0         // we process one argument per non-trivial format
+    afterIndex := false // previous item in format was an index like [3].
+    p.reordered = false
+
+    // some source code that handles the format string is omitted here
+    // ......
+    // some source code that handles the format string is omitted here
+
+    if !p.reordered && argNum < len(a) {
+        p.fmt.clearflags()
+        p.buf.WriteString(extraString)
+        for i, arg := range a[argNum:] {
+            if i > 0 {
+                p.buf.WriteString(commaSpaceString)
+            }
+            if arg == nil {
+                p.buf.WriteString(nilAngleString)
+            } else {
+                p.buf.WriteString(reflect.TypeOf(arg).String())
+                p.buf.WriteByte('=')
+                p.printArg(arg, 'v')
+            }
+        }
+        p.buf.WriteByte(')')
+    }
+}
+```
+</details>
