@@ -15,7 +15,7 @@ Go入门学习
 - [数组与切片](#数组与切片)
 - [Map相关](#Map相关)
 - [包(Package)](#包(Package))
-- [结构(struct)和方法(method)](#结构(struct)和方法(method))
+- [结构(struct)和方法(method)](#结构和方法)
 - [接口](#接口)
 <!-- /TOC -->
 
@@ -425,7 +425,7 @@ type name struct {
 
 安装外部库的命令为```go install xxx.com/xxx/yyy```(类似这样的，不一定是网址类型)
 
-## 结构(struct)和方法(method)
+## 结构和方法
 
 Go中没有类，所以struct的概念相比其他的语言来讲会更重要一些
 
