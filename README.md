@@ -14,6 +14,9 @@ Go入门学习
 - [与其他语言不同之处](#与其他语言不同之处)
 - [数组与切片](#数组与切片)
 - [Map相关](#Map相关)
+- [包(Package)](#包(Package))
+- [结构(struct)和方法(method)](#结构(struct)和方法(method))
+- [接口](#接口)
 <!-- /TOC -->
 
 </details>
@@ -325,6 +328,265 @@ if _, ok := map1[key1]; ok {
 
 删除key的时候直接```delete(map,key)```即可，即便key不存在也不会失败
 </details>
+
+<details>
+    <summary>Map类型的切片</summary>
+
+代码如下：
+
+```go
+package main
+import "fmt"
+
+func main() {
+    // Version A:
+    items := make([]map[int]int, 5)
+    for i:= range items {
+        items[i] = make(map[int]int, 1)
+        items[i][1] = 2
+    }
+    fmt.Printf("Version A: Value of items: %v\n", items)
+    //Version A: Value of items: [map[1:2] map[1:2] map[1:2] map[1:2] map[1:2]]
+
+
+    // Version B: NOT GOOD!
+    items2 := make([]map[int]int, 5)
+    for _, item := range items2 {
+        item = make(map[int]int, 1) // item is only a copy of the slice element.
+        item[1] = 2 // This 'item' will be lost on the next iteration.
+    }
+    fmt.Printf("Version B: Value of items: %v\n", items2)
+    //Version B: Value of items: [map[] map[] map[] map[] map[]]
+
+    // B版本中的item只是一个copy，所以不是一个好的实践，也没有办法真正的初始化到map中
+
+}
+```
+
+</details>
+
+<details>
+    <summary>Map中的排序</summary>
+
+Map中是不排序的，不论key还是value，若要实现排序有两个思路：
+
+1. 取出其中的所有key到切片中，然后再for-range打印：
+
+```go
+// the telephone alphabet:
+package main
+import (
+    "fmt"
+    "sort"
+)
+
+var (
+    barVal = map[string]int{"alpha": 34, "bravo": 56, "charlie": 23,
+                            "delta": 87, "echo": 56, "foxtrot": 12,
+                            "golf": 34, "hotel": 16, "indio": 87,
+                            "juliet": 65, "kili": 43, "lima": 98}
+)
+
+func main() {
+    fmt.Println("unsorted:")
+    for k, v := range barVal {
+        fmt.Printf("Key: %v, Value: %v / ", k, v)
+    }
+    keys := make([]string, len(barVal))
+    i := 0
+    for k, _ := range barVal {
+        keys[i] = k
+        i++
+    }
+    sort.Strings(keys)
+    fmt.Println()
+    fmt.Println("sorted:")
+    for _, k := range keys {
+        fmt.Printf("Key: %v, Value: %v / ", k, barVal[k])
+    }
+}
+```
+
+2. 但是若想要一个排序好的列表，还是使用结构体切片会比较有效：
+
+```go
+type name struct {
+    key string
+    value int
+}
+```
+</details>
+
+## 包(Package)
+
+[包列表查询](https://gowalker.org/search?q=gorepos)
+
+这一章主要讲各种库，以及自编库和编译安装到注意事项，故无太多记录。
+
+安装外部库的命令为```go install xxx.com/xxx/yyy```(类似这样的，不一定是网址类型)
+
+## 结构(struct)和方法(method)
+
+Go中没有类，所以struct的概念相比其他的语言来讲会更重要一些
+
+<details>
+    <summary>定义</summary>
+
+```go
+type identifier struct {
+    field1 type1
+    field2 type2
+    ...
+}
+
+// type 1
+var s T
+s.a = 5
+s.b = 8
+
+// type 2
+var t *T
+t = new(T)
+```
+
+通过结构体的两种类型声明而出的一个是实例（指针变量）一个是对象；当给结构体别名的时候，两种类型可以互相直接转换
+</details>
+
+<details>
+    <summary>通过工厂方法实现类似其他语言的构造函数</summary>
+
+```go
+type File struct {
+    fd      int     // 文件描述符
+    name    string  // 文件名
+}
+func NewFile(fd int, name string) *File {
+    if fd < 0 {
+        return nil
+    }
+
+    return &File{fd, name}
+}
+f := NewFile(10, "./test.txt")
+```
+
+强制使用工厂方法：只需要将包的结构体用小写开头，其他包则无法直接访问到该类型，只能通过可见的工厂方法来构造这个实例。
+</details>
+
+<details>
+    <summary>带标签的结构体</summary>
+
+```go
+type TagType struct { // tags
+    field1 bool   "An important answer"
+    field2 string "The name of the thing"
+    field3 int    "How much there are"
+}
+// 其中的field类型后的字符串就是tag，可以通过反射来获取类型，然后通过下标获取字段，通过字段的Tag属性来获取这个字符串。
+```
+</details>
+
+<details>
+    <summary>匿名字段和内嵌结构体</summary>
+
+结构体中可以内嵌有类型的而无变量名的结构体变量，然后可以直接获取到相应变量中的字段等，内嵌变量（如int，float也是可以的）
+
+```go
+package main
+
+import "fmt"
+
+type innerS struct {
+    in1 int
+    in2 int
+}
+
+type outerS struct {
+    b    int
+    c    float32
+    int  // anonymous field
+    innerS //anonymous field
+}
+
+func main() {
+    outer := new(outerS)
+    outer.b = 6
+    outer.c = 7.5
+    outer.int = 60
+    outer.in1 = 5
+    outer.in2 = 10
+
+    fmt.Printf("outer.b is: %d\n", outer.b)
+    fmt.Printf("outer.c is: %f\n", outer.c)
+    fmt.Printf("outer.int is: %d\n", outer.int)
+    fmt.Printf("outer.in1 is: %d\n", outer.in1)
+    fmt.Printf("outer.in2 is: %d\n", outer.in2)
+
+    // 使用结构体字面量
+    outer2 := outerS{6, 7.5, 60, innerS{5, 10}}
+    fmt.Println("outer2 is:", outer2)
+}
+
+// 输出：
+// outer.b is: 6
+// outer.c is: 7.500000
+// outer.int is: 60
+// outer.in1 is: 5
+// outer.in2 is: 10
+// outer2 is:{6 7.5 60 {5 10}}
+```
+
+当命名冲突(内嵌不同结构体中的变量名重复)的时候，外部覆盖内部，如果处于同一层，需要程序员明确指定是哪个类型中的属性
+</details>
+
+<details>
+    <summary>方法</summary>
+
+结构体+方法近似于OO中的类。方法是有接收者的函数，声明方法如下：
+
+```go
+func (recv receiver_type) methodName(parameter_list) (return_value_list) { ... }
+```
+
+1. receiver_type可以为任意类型（在相同包中声明），但是不能为接口、指针类型（但是可以是允许的类型的指针）
+2. 当接收者是指针的时候，可以在方法中修改接收者的值或者状态
+3. 指针方法和值方法都可以在指针或非指针上被调用，如下面程序所示，类型 List 在值上有一个方法 Len()，在指针上有一个方法 Append()，但是可以看到两个方法都可以在两种类型的变量上被调用。
+
+```go
+package main
+
+import (
+    "fmt"
+)
+
+type List []int
+
+func (l List) Len() int        { return len(l) }
+func (l *List) Append(val int) { *l = append(*l, val) }
+
+func main() {
+    // 值
+    var lst List
+    lst.Append(1)
+    fmt.Printf("%v (len: %d)", lst, lst.Len()) // [1] (len: 1)
+
+    // 指针
+    plst := new(List)
+    plst.Append(2)
+    fmt.Printf("%v (len: %d)", plst, plst.Len()) // &[2] (len: 1)
+}
+```
+</details>
+
+
+<details>
+    <summary>String()方法</summary>
+
+通过定义类型的String方法，当调用```fmt.Println(struct_obj)```的时候，会输出String中的方法，调试方便。
+</details>
+
+## 接口
+
 
 
 
