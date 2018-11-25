@@ -13,6 +13,7 @@ Go入门学习
 - [Go及环境相关](#Go及环境相关)
 - [与其他语言不同之处](#与其他语言不同之处)
 - [数组与切片](#数组与切片)
+- [Map相关](#Map相关)
 <!-- /TOC -->
 
 </details>
@@ -292,3 +293,39 @@ func main() {
 }
 ```
 </details>
+
+## Map相关
+
+<details>
+    <summary>关于Map的初始化</summary>
+
+```go
+//var map1 map[keytype]valuetype
+var map1 map[string]int
+
+//值作为切片值，应对一key多value的情况
+mp1 := make(map[int][]int)
+mp2 := make(map[int]*[]int)
+```
+
+> 请永远用make来初始化Map，而不是用new，否则你会获得一个空饮用的指针，相当于声明了一个未初始化的变量并且取得了它的地址
+
+</details>
+
+<details>
+    <summary>map中不存在的key的value的初始值</summary>
+
+当Key不存在的时候，返回的是valuetype的空值，判断key是否存在的方式如下：
+
+```go
+if _, ok := map1[key1]; ok {
+    // 如果存在，ok为true
+}
+```
+
+删除key的时候直接```delete(map,key)```即可，即便key不存在也不会失败
+</details>
+
+
+
+
