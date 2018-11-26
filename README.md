@@ -595,7 +595,8 @@ func main() {
 1. 类型不需要显式声明它实现了某个接口：接口被隐式地实现。多个类型可以实现同一个接口。
 2. 实现某个接口的类型（除了实现接口方法外）可以有其他的方法。
 3. 一个类型可以实现多个接口。
-4. 接口类型可以包含一个实例的引用， 该实例的类型实现了此接口（接口是动态类型）。
+4. 接口类型可以包含一个实例的引用，该实例的类型实现了此接口（接口是动态类型）。
+5. 接口可以嵌套接口。
 
 Example：
 
@@ -646,11 +647,67 @@ func main() {
 ```
 </details>
 
+<details>
+    <summary>检测接口变量的类型</summary>
 
+接口变量可以包含实例的引用，而很多时候我们需要确定该引用类型。我们假定接口变量名为var_inter，类型名为struct_type，那么我们可以通过：
 
+```go
+val,ok := var_inter.(*struct_type)
+// ok为true时，val是转换后的值；否则为该类型空值
 
+// 另一种方式判断类型
+switch t := var_inter.(type) {
+case *Square:
+    fmt.Printf("Type Square %T with value %v\n", t, t)
+case *Circle:
+    fmt.Printf("Type Circle %T with value %v\n", t, t)
+case nil:
+    fmt.Printf("nil value: nothing to check?\n")
+default:
+    fmt.Printf("Unexpected type %T\n", t)
+}
+// Type Square *main.Square with value &{5}
+```
+</details>
 
+<details>
+    <summary>确定某类型是否实现了某接口</summary>
 
+```go
+// 假定v是一个值
+type Stringer interface {
+    String() string
+}
+
+if sv, ok := v.(Stringer); ok {
+    fmt.Printf("v implements String(): %s\n", sv.String()) // note: sv, not v
+}
+```
+</details>
+
+<details>
+    <summary>接口接收者可调用类型</summary>
+
+1. 指针方法可以通过指针调用
+2. 值方法可以通过值调用
+3. 接收者是值的方法可以通过指针调用，因为指针会首先被解引用
+4. 接收者是指针的方法不可以通过值调用，因为存储在接口中的值没有地址
+
+</details>
+
+<details>
+    <summary>空接口的作用</summary>
+
+1. 由于空接口能承接任意类型的变量，所以可以实现承接任意类型的切片
+2. 实现数据结构（如树）的时候，data字段可以用空接口，这样就能存储任意的值，使得代码具有足够的通用性
+</details>
+
+<details>
+    <summary>通过反射修改值</summary>
+
+[源码](./src/reflect/go)
+</details>
 
 
 
