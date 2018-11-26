@@ -20,6 +20,16 @@ func main() {
     fmt.Println("The Elem of v is: ", v)
     fmt.Println("settability of v:", v.CanSet())
     v.SetFloat(3.1415) // this works!
+    fmt.Printf("type of v is %T\n",v)
     fmt.Println(v.Interface())
     fmt.Println(v)
 }
+// type of reflect.ValueOf(v) is reflect.Value,<float64 Value>
+// settability of v: false
+// type of v: *float64
+// settability of v: false
+// The Elem of v is:  3.4
+// settability of v: true
+// type of v is reflect.Value
+// 3.1415
+// 3.1415
