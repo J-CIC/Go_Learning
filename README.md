@@ -17,6 +17,9 @@ Go入门学习
 - [包(Package)](#包)
 - [结构(struct)和方法(method)](#结构和方法)
 - [接口](#接口)
+- [读写](#读写)
+- [错误处理和测试](#错误处理和测试)
+- [协程与通道](#协程与通道)
 <!-- /TOC -->
 
 </details>
@@ -724,6 +727,373 @@ if sv, ok := v.(Stringer); ok {
 
 [代码](./src/embeded_Interface.go)
 
+[有关内嵌类型的阅读](https://travix.io/type-embedding-in-go-ba40dd4264df)
+
 接口可以通过继承多个接口来提供像**多重继承**一样的特性
 </details>
+
+## 读写
+
+<details>
+    <summary>读取键盘输入</summary>
+
+fmt包提供了Scan或Sscan开头的函数（Scanln和Sscanf），其中Scanln以空格分隔符，直到遇到换行；Sscanf则类似c中的scanf，按照第一个参数规定的顺序来获取输入。
+
+<details>
+        <summary>Example:</summary>
+
+```go
+// 从控制台读取输入:
+package main
+import "fmt"
+
+var (
+   firstName, lastName, s string
+   i int
+   f float32
+   input = "56.12 / 5212 / Go"
+   format = "%f / %d / %s"
+)
+
+func main() {
+   fmt.Println("Please enter your full name: ")
+   fmt.Scanln(&firstName, &lastName)
+   // fmt.Scanf("%s %s", &firstName, &lastName)
+   fmt.Printf("Hi %s %s!\n", firstName, lastName) // Hi Chris Naegels
+   fmt.Sscanf(input, format, &f, &i, &s)
+   fmt.Println("From the string we read: ", f, i, s)
+    // 输出结果: From the string we read: 56.12 5212 Go
+}
+```
+</details>
+
+也可以使用 bufio 包提供的缓冲读取（buffered reader）来读取数据：
+
+<details>
+    <summary>Example:</summary>
+
+```go
+package main
+import (
+    "fmt"
+    "bufio"
+    "os"
+)
+
+var inputReader *bufio.Reader
+var input string
+var err error
+
+func main() {
+    inputReader = bufio.NewReader(os.Stdin)
+    fmt.Println("Please enter some input: ")
+    input, err = inputReader.ReadString('\n')
+    if err == nil {
+        fmt.Printf("The input was: %s\n", input)
+    }
+}
+```
+</details>
+
+</details>
+
+<details>
+    <summary>文件读</summary>
+
+os.File类型的指针表示文件句柄，os.Stdin和os.Stdout的类型都是\*os.File
+
+<details>
+    <summary>文件读示例</summary>
+
+```go
+package main
+
+import (
+    "bufio"
+    "fmt"
+    "io"
+    "os"
+)
+
+func main() {
+    inputFile, inputError := os.Open("input.dat")
+    if inputError != nil {
+        fmt.Printf("An error occurred on opening the inputfile\n" +
+            "Does the file exist?\n" +
+            "Have you got acces to it?\n")
+        return // exit the function on error
+    }
+    defer inputFile.Close()
+
+    inputReader := bufio.NewReader(inputFile)
+    for {
+        inputString, readerError := inputReader.ReadString('\n')
+        fmt.Printf("The input was: %s", inputString)
+        if readerError == io.EOF {
+            return
+        }      
+    }
+}
+```
+</details>
+
+而带缓冲的读取二进制文件的方法，可以用Read()函数来处理
+
+```go
+buf := make([]byte, 1024)
+for {
+    n, err := inputReader.Read(buf)
+    if (n == 0) {
+        break
+    }
+}
+```
+
+[完整示例](./src/file_read.go)
+
+
+压缩文件的读取，利用compress包读取
+
+</details>
+
+
+<details>
+    <summary>文件写</summary>
+
+```go
+package main
+
+import "os"
+
+func main() {
+    os.Stdout.WriteString("hello, world\n")
+    f, _ := os.OpenFile("test", os.O_CREATE|os.O_WRONLY, 0666)
+    defer f.Close()
+    f.WriteString("hello, world in a file\n")
+}
+```
+
+<details>
+    <summary>使用bufio的方式</summary>
+
+```go
+package main
+
+import (
+    "os"
+    "bufio"
+    "fmt"
+)
+
+func main () {
+    // var outputWriter *bufio.Writer
+    // var outputFile *os.File
+    // var outputError os.Error
+    // var outputString string
+    outputFile, outputError := os.OpenFile("output.dat", os.O_WRONLY|os.O_CREATE, 0666)
+    if outputError != nil {
+        fmt.Printf("An error occurred with file opening or creation\n")
+        return  
+    }
+    defer outputFile.Close()
+
+    outputWriter := bufio.NewWriter(outputFile)
+    outputString := "hello world!\n"
+
+    for i:=0; i<10; i++ {
+        outputWriter.WriteString(outputString)
+    }
+    outputWriter.Flush()
+}
+```
+</details>
+
+</details>
+
+<details>
+    <summary>JSON的序列化和反序列化</summary>
+
+json的库在```encoding/json```，其中序列化函数```json.Marshal()```的函数签名是```func Marshal(v interface{}) ([]byte, error)```，反序列化的函数```UnMarshal()```的函数签名是```func Unmarshal(data []byte, v interface{}) error```
+
+解码的时候要注意解码后格式的转换。
+
+<details>
+    <summary>例子</summary>
+
+```go
+b := []byte(`{"Name": "Wednesday", "Age": 6, "Parents": ["Gomez", "Morticia"]}`)
+var f interface{}
+err := json.Unmarshal(b, &f)
+
+//  f指向的值是一个 map，key 是一个字符串，value 是自身存储作为空接口类型的值：
+map[string]interface{} {
+    "Name": "Wednesday",
+    "Age":  6,
+    "Parents": []interface{} {
+        "Gomez",
+        "Morticia",
+    },
+}
+
+// 要访问这个数据，我们可以使用类型断言
+m := f.(map[string]interface{})
+
+// 我们可以通过 for range 语法和 type switch 来访问其实际类型：
+for k, v := range m {
+    switch vv := v.(type) {
+    case string:
+        fmt.Println(k, "is string", vv)
+    case int:
+        fmt.Println(k, "is int", vv)
+
+    case []interface{}:
+        fmt.Println(k, "is an array:")
+        for i, u := range vv {
+            fmt.Println(i, u)
+        }
+    default:
+        fmt.Println(k, "is of a type I don’t know how to handle")
+    }
+}
+// 通过这种方式，你可以处理未知的 JSON 数据，同时可以确保类型安全。
+
+
+```
+</details>
+</details>
+
+
+## 错误处理和测试
+
+Go中处理普通错误，应该通过函数最后一个返回值返回个主调方，如果返回nil表示正常。至于panic and recover是用在真正的异常上的（无法预测的错误上的）。fmt中也有```fmt.Errorf()```来打印错误信息，使用方法与```fmt.Printf()```一模一样。
+
+
+<details>
+    <summary>自定义错误</summary>
+
+```go
+// PathError records an error and the operation and file path that caused it.
+type PathError struct {
+    Op string    // "open", "unlink", etc.
+    Path string  // The associated file.
+    Err error  // Returned by the system call.
+}
+
+func (e *PathError) String() string {
+    return e.Op + " " + e.Path + ": "+ e.Err.Error()
+}
+```
+</details>
+
+<details>
+    <summary>panic和recover</summary>
+
+recover只能在defer修饰的函数中使用：用于取得panic调用中传递过来的错误值，如果是正常执行，调用recover会返回nil，且没有其它效果。
+
+一个简单的例子：
+
+```go
+// panic_recover.go
+package main
+
+import (
+    "fmt"
+)
+
+func badCall() {
+    panic("bad end")
+}
+
+func test() {
+    defer func() {
+        if e := recover(); e != nil {
+            fmt.Printf("Panicing %s\r\n", e)
+        }
+    }()
+    badCall()
+    fmt.Printf("After bad call\r\n") // <-- wordt niet bereikt
+}
+
+func main() {
+    fmt.Printf("Calling test\r\n")
+    test()
+    fmt.Printf("Test completed\r\n")
+}
+
+// Calling test
+// Panicing bad end
+// Test completed
+``` 
+
+> 计算机科学领域的任何问题都可以通过增加一个简介的中间层来解决。  
+> Any problem in computer science can be solved by another layer of indirection.
+
+所以用以下闭包的方式（外层包装一个error_handler，并于其中的defer进行recover）来解决多次判断错误的不优雅代码：[传送门](https://go.fdos.me/13.5.html)
+
+</details>
+
+<details>
+    <summary>测试</summary>
+
+测试代码写于xx_test.go中，即当源码文件为add.go的时候，测试代码为add_test.go。且测试数据通常通过表驱动的方式，在函数中for循环对比输入输出是否正确。
+    
+</details>
+
+## 协程与通道
+
+通过go func()关键字来调用goroutine
+
+<details>
+    <summary>goroutine1.go</summary>
+
+```go
+package main
+
+import (
+    "fmt"
+    "time"
+)
+
+func main() {
+    fmt.Println("In main()")
+    go longWait()
+    go shortWait()
+    fmt.Println("About to sleep in main()")
+    // sleep works with a Duration in nanoseconds (ns) !
+    time.Sleep(10 * 1e9)
+    fmt.Println("At the end of main()")
+}
+
+func longWait() {
+    fmt.Println("Beginning longWait()")
+    time.Sleep(5 * 1e9) // sleep for 5 seconds
+    fmt.Println("End of longWait()")
+}
+
+func shortWait() {
+    fmt.Println("Beginning shortWait()")
+    time.Sleep(2 * 1e9) // sleep for 2 seconds
+    fmt.Println("End of shortWait()")
+}
+
+// In main()
+// About to sleep in main()
+// Beginning longWait()
+// Beginning shortWait()
+// End of shortWait()
+// End of longWait()
+// At the end of main()
+```
+</details>
+
+<details>
+    <summary>通道</summary>
+
+声明方式：
+> var identifier chan datatype
+
+</details>
+
+
+
 
