@@ -123,6 +123,8 @@ result = min(slice...)
 
 ### 不同类型的变长参数(以Printf为例)
 
+[Interface相关](#接口)
+
 ```go
 //一个简单的例子
 func typecheck(..,..,values … interface{}) {
@@ -709,5 +711,19 @@ if sv, ok := v.(Stringer); ok {
 [源码](./src/reflect.go)
 </details>
 
+<details>
+    <summary>类型内嵌接口</summary>
 
+> PS：这里原书那里的一些说法与我测试结果不太相同
+
+当一个类型包含（内嵌）另一个类型（实现了一个或多个接口）的**指针**时，这个类型就可以使用（另一个类型）所有的接口方法。更无歧义的表达是：
+
+1. 接口可以内嵌接口
+2. 结构体可以内嵌结构体或结构体指针
+3. 结构体可以内嵌接口，此时初始化时要用实现了该接口的类型来初始化
+
+[代码](./src/embeded_Interface.go)
+
+接口可以通过继承多个接口来提供像**多重继承**一样的特性
+</details>
 
