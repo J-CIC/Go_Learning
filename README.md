@@ -1092,6 +1092,89 @@ func shortWait() {
 声明方式：
 > var identifier chan datatype
 
+```go
+var ch1 chan string
+ch1 = make(chan string)
+
+// or
+
+ch1 := make(chan string)
+
+// 发送数据
+var text string
+text = "Hello world" 
+ch <- text
+
+// 接收数据
+output := <- ch
+```
+
+<details>
+    <summary>goroutine2.go</summary>
+
+```go
+package main
+
+import (
+    "fmt"
+    "time"
+)
+
+func main() {
+    ch := make(chan string)
+
+    go sendData(ch)
+    go getData(ch)
+
+    time.Sleep(1e9)
+}
+
+func sendData(ch chan string) {
+    ch <- "Washington"
+    ch <- "Tripoli"
+    ch <- "London"
+    ch <- "Beijing"
+    ch <- "Tokio"
+}
+
+func getData(ch chan string) {
+    var input string
+    // time.Sleep(2e9)
+    for {
+        input = <-ch
+        fmt.Printf("%s ", input)
+    }
+}
+
+// 输出如下：
+// Washington Tripoli London Beijing Tokio
+```
+
+</details>
+
+容量为0的通道是阻塞的，即发送和接受操作都是阻塞的，发送者或接收者未就绪的时候，通道都是阻塞的，通道使用中，对于新的输入也是阻塞的。
+
+声明带缓冲的通道（异步的非阻塞，满或空的时候还是阻塞的）方法：```ch := make(chan type, value)```
+
+<details>
+    <summary>排序中使用通道</summary>
+
+```go
+done := make(chan bool)
+// doSort is a lambda function, so a closure which knows the channel done:
+doSort := func(s []int){
+    sort(s)
+    done <- true
+}
+i := pivot(s)
+go doSort(s[:i])
+go doSort(s[i:])
+<-done
+<-done
+```
+</details>
+
+
 </details>
 
 
