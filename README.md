@@ -1152,9 +1152,17 @@ func getData(ch chan string) {
 
 </details>
 
+</details>
+
+<details>
+    <summary>缓冲与不缓冲的通道</summary>
+
 容量为0的通道是阻塞的，即发送和接受操作都是阻塞的，发送者或接收者未就绪的时候，通道都是阻塞的，通道使用中，对于新的输入也是阻塞的。
 
 声明带缓冲的通道（异步的非阻塞，满或空的时候还是阻塞的）方法：```ch := make(chan type, value)```
+
+</details>
+
 
 <details>
     <summary>排序中使用通道</summary>
@@ -1174,6 +1182,389 @@ go doSort(s[i:])
 ```
 </details>
 
+<details>
+    <summary>另一种方式使用通道</summary>
+
+```go
+package main
+
+import (
+    "fmt"
+    "time"
+)
+
+func main() {
+    stream := pump()
+    go suck(stream)
+    time.Sleep(1e9)
+}
+
+func pump() chan int {
+    ch := make(chan int)
+    go func() {
+        for i := 0; ; i++ {
+            ch <- i
+        }
+    }()
+    return ch
+}
+
+func suck(ch chan int) {
+    for {
+        fmt.Println(<-ch)
+    }
+}
+```
+
+</details>
+
+<details>
+    <summary>通道的方向</summary>
+
+通道可以通过注解来表示它只发送或者接收：
+
+```go
+var send_only chan<- int         // channel can only receive data
+var recv_only <-chan int        // channel can only send data
+```
+
+<details>
+    <summary>Goroutine判断素数</summary>
+
+```go
+// Copyright 2009 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.package main
+package main
+
+import "fmt"
+
+// Send the sequence 2, 3, 4, ... to channel 'ch'.
+func generate(ch chan int) {
+    for i := 2; ; i++ {
+        ch <- i // Send 'i' to channel 'ch'.
+    }
+}
+
+// Copy the values from channel 'in' to channel 'out',
+// removing those divisible by 'prime'.
+func filter(in, out chan int, prime int) {
+    for {
+        i := <-in // Receive value of new variable 'i' from 'in'.
+        if i%prime != 0 {
+            out <- i // Send 'i' to channel 'out'.
+        }
+    }
+}
+
+// The prime sieve: Daisy-chain filter processes together.
+func main() {
+    ch := make(chan int) // Create a new channel.
+    go generate(ch)      // Start generate() as a goroutine.
+    for {
+        prime := <-ch
+        fmt.Print(prime, " ")
+        ch1 := make(chan int)
+        go filter(ch, ch1, prime)
+        ch = ch1
+    }
+}
+
+// 解释：  
+// 首先ch放入了2，然后进到第一个filter函数，在in通道中获取了待判断的3，检测为素数后放进了ch1，然后ch(2)被替换为了ch1，但是第一个goroutine(还在跑)的选择器还是会从最开始的ch中取数字的。
+// 此后的for循环只会从上一次的channel中获取输入，也就是说其实产生了很多个filter的goroutine，上一个filter通过了的数字会被发送到下一个filter的输入频道中，如果是素数，那么他会通过所有素数filter的判断，然后生成新的channel，走到下个for的时候会输出自身，然后开启新的filter等待上个channel传来新的待判断的数字。
+
+```
+
+版本2:
+
+```go
+// Copyright 2009 The Go Authors. All rights reserved.
+// Use of this source code is governed by a BSD-style
+// license that can be found in the LICENSE file.
+
+package main
+
+import (
+    "fmt"
+)
+
+// Send the sequence 2, 3, 4, ... to returned channel
+func generate() chan int {
+    ch := make(chan int)
+    go func() {
+        for i := 2; ; i++ {
+            ch <- i
+        }
+    }()
+    return ch
+}
+
+// Filter out input values divisible by 'prime', send rest to returned channel
+func filter(in chan int, prime int) chan int {
+    out := make(chan int)
+    go func() {
+        for {
+            if i := <-in; i%prime != 0 {
+                out <- i
+            }
+        }
+    }()
+    return out
+}
+
+func sieve() chan int {
+    out := make(chan int)
+    go func() {
+        ch := generate()
+        for {
+            prime := <-ch
+            ch = filter(ch, prime)
+            out <- prime
+        }
+    }()
+    return out
+}
+
+func main() {
+    primes := sieve()
+    for {
+        fmt.Println(<-primes)
+    }
+}
+```
+
+
+</details>
+
+</details>
+
+
+
+<details>
+    <summary>关闭通道</summary>  
+
+通道的关闭用close()函数即可，执行后，通道不可以再接收值，再次望这个通道发送数据或者关闭都会引起panic。  
+一般使用都如下：  
+```go
+ch := make(chan float64)
+defer close(ch)
+
+// 检测是否关闭的代码
+
+v,ok := <- ch // 如果v获得到了值那么ok会是true
+
+// 更好的方法是使用for-range结构，因为这会自动判断通道是否关闭
+
+for input := range ch {
+    process(input)
+}
+```  
+
+</details>
+
+<details>
+    <summary>select切换协程</summary>
+
+可以通过select关键字来从不同的协程中找到未阻塞的协程获取/发送内容，和switch类似但是不允许fallthrough。  
+Example：  
+```go
+select {
+    case u := <- ch1:
+        ...
+    case v := <- ch2:
+        ...
+    default :
+        // 没有一个通道就绪的时候
+        ...
+}
+```  
+注意select并不是顺序的选择，当多个channel就绪的时候是**(伪)随机**的选择一个，如果都没准备好则走default。通过这种方式，配合上无限循环并在default中写break条件，就可以保证使用通道过程中不被阻塞。  
+Note：如果select没有default时，有可能一直阻塞。   
+<details>
+    <summary>Full Exapmle:</summary>
+
+```go
+package main
+
+import (
+    "fmt"
+    "time"
+)
+
+func main() {
+    ch1 := make(chan int)
+    ch2 := make(chan int)
+
+    go pump1(ch1)
+    go pump2(ch2)
+    go suck(ch1, ch2)
+
+    time.Sleep(1e9)
+}
+
+func pump1(ch chan int) {
+    for i := 0; ; i++ {
+        ch <- i * 2
+    }
+}
+
+func pump2(ch chan int) {
+    for i := 0; ; i++ {
+        ch <- i + 5
+    }
+}
+
+func suck(ch1, ch2 chan int) {
+    for {
+        select {
+        case v := <-ch1:
+            fmt.Printf("Received on channel 1: %d\n", v)
+        case v := <-ch2:
+            fmt.Printf("Received on channel 2: %d\n", v)
+        }
+    }
+}
+```  
+
+</details>
+
+</details>
+
+<details>
+    <summary>通道超时和计时器</summary>
+
+time包中有个Ticker结构体，会以指定时间间隔重复向通道C发送时间值：  
+```go
+type Ticker struct {
+    C <-chan Time // the channel on which the ticks are delivered.
+    // contains filtered or unexported fields
+    ...
+}
+
+// example
+
+ticker := time.NewTicker(updateInterval) // 单位是纳秒
+defer ticker.Stop()
+...
+select {
+case u:= <-ch1:
+    ...
+case v:= <-ch2:
+    ...
+case <-ticker.C:
+    logState(status) // call some logging function logState
+default: // no value ready to be received
+    ...
+}
+```  
+
+超时的示例：  
+```go
+ch := make(chan error, 1)
+go func() { ch <- client.Call("Service.Method", args, &reply) } ()
+select {
+case resp := <-ch
+    // use resp and reply
+case <-time.After(timeoutNs):
+    // call timed out
+    break
+}
+```  
+书里说：  
+> 注意缓冲大小设置为 1 是必要的，可以避免协程死锁以及确保超时的通道可以被垃圾回收（主要是垃圾回收，func中的内存引用将一直无法回收直到程序停止）。
+
+</details>
+
+<details>
+    <summary>协程和恢复</summary>
+
+```go
+func server(workChan <-chan *Work) {
+    for work := range workChan {
+        go safelyDo(work)   // start the goroutine for that work
+    }
+}
+
+func safelyDo(work *Work) {
+    defer func() {
+        if err := recover(); err != nil {
+            log.Printf("Work failed with %s in %v", err, work)
+        }
+    }()
+    do(work)
+}
+```
+
+</details>
+
+<details>
+    <summary>惰性加载器</summary>
+
+```go
+package main
+
+import (
+    "fmt"
+)
+
+var resume chan int
+
+func integers() chan int {
+    yield := make(chan int)
+    count := 0
+    go func() {
+        for {
+            yield <- count
+            count++
+        }
+    }()
+    return yield
+}
+
+func generateInteger() int {
+    return <-resume
+}
+
+func main() {
+    resume = integers()
+    fmt.Println(generateInteger())  //=> 0
+    fmt.Println(generateInteger())  //=> 1
+    fmt.Println(generateInteger())  //=> 2    
+}
+```
+
+</details>
+
+<details>
+    <summary>Future模式</summary>  
+
+矩阵求逆   
+```go
+func InverseProduct(a Matrix, b Matrix) {
+    a_inv := Inverse(a)
+    b_inv := Inverse(b)
+    return Product(a_inv, b_inv)
+}
+
+// VS
+
+func InverseProduct(a Matrix, b Matrix) {
+    a_inv_future := InverseFuture(a)   // start as a goroutine
+    b_inv_future := InverseFuture(b)   // start as a goroutine
+    a_inv := <-a_inv_future
+    b_inv := <-b_inv_future
+    return Product(a_inv, b_inv)
+}
+
+func InverseFuture(a Matrix) chan Matrix {
+    future := make(chan Matrix)
+    go func() {
+        future <- Inverse(a)
+    }()
+    return future
+}
+```
 
 </details>
 
