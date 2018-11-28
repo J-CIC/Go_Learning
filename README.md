@@ -20,6 +20,7 @@ Go入门学习
 - [读写](#读写)
 - [错误处理和测试](#错误处理和测试)
 - [协程与通道](#协程与通道)
+- [踩过的坑](#踩过的坑)
 <!-- /TOC -->
 
 </details>
@@ -1568,6 +1569,13 @@ func InverseFuture(a Matrix) chan Matrix {
 
 </details>
 
+## 踩过的坑
 
+<details>
+    <summary>注意init和其他函数的顺序</summary>
+
+一个包可能有多个init函数甚至在一个源码文件中。它们的执行是无序的。而且自己在main中写的初始化一定是晚于init的，不要因为main中写的函数名带有init就想当然的觉得内置init函数可以取得这些内容
+
+</details>
 
 
