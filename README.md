@@ -21,6 +21,7 @@ Go入门学习
 - [错误处理和测试](#错误处理和测试)
 - [协程与通道](#协程与通道)
 - [踩过的坑](#踩过的坑)
+- [gove]
 <!-- /TOC -->
 
 </details>
@@ -1578,4 +1579,17 @@ func InverseFuture(a Matrix) chan Matrix {
 
 </details>
 
+<details>
+    <summary>govendor不会自动更新自己的internal库</summary>
 
+要将vendor下的version.go相关的一起更新到相同版本，govendor不会递归更新
+
+</details>
+
+
+## govendor
+
+```shell
+govendor update url@version
+govendor fetch url@version
+```
