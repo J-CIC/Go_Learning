@@ -21,7 +21,8 @@ Go入门学习
 - [错误处理和测试](#错误处理和测试)
 - [协程与通道](#协程与通道)
 - [踩过的坑](#踩过的坑)
-- [gove]
+- [govendor]
+- [gin框架相关]
 <!-- /TOC -->
 
 </details>
@@ -1593,3 +1594,12 @@ func InverseFuture(a Matrix) chan Matrix {
 govendor update url@version
 govendor fetch url@version
 ```
+
+## gin框架相关
+
+<details>
+    <summary>JSONP()函数</summary>
+
+`func (c *Context) JSONP(code int, obj interface{})`里面会判断callback参数为空的情况并返回JSON，所以不需要重复处理判断
+
+</details>
