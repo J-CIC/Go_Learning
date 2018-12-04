@@ -23,6 +23,7 @@ Go入门学习
 - [踩过的坑](#踩过的坑)
 - [govendor](#govendor)
 - [gin框架相关](#gin框架相关)
+- [最佳实践](#最佳实践)
 <!-- /TOC -->
 
 </details>
@@ -1601,5 +1602,94 @@ govendor fetch url@version
     <summary>JSONP()函数</summary>
 
 `func (c *Context) JSONP(code int, obj interface{})`里面会判断callback参数为空的情况并返回JSON，所以不需要重复处理判断
+
+</details>
+
+
+## 最佳实践
+
+<details>
+    <summary>对象复用</summary>
+
+```go
+// 通过传入buf的方式避免函数内产生新对象
+func Read() ([]byte,error)
+func Read(b []byte)(int,error)
+```
+
+</details>
+
+<details>
+    <summary>Streaming</summary>
+
+```go
+// 序列化->压缩->发送，思路是加强内存复用
+
+// version1
+b := &bytes.Buffer{}
+msgp.Encode(b,data)
+b2 := &bytes.Buffer{}
+sw := snappy.NewWriter(b2)
+sw.Write(b.Bytes())
+conn.Write(b2.Bytes())
+
+// version2
+b := &bytes.Buffer{}
+sw := snappy.NewWriter(b)
+msgp.Encode(sw,data)
+conn.Write(b.Bytes())
+
+// version3
+b := bufio.NewWriter(conn)
+sw := snappy.NewWriter(b)
+msgp.Encode(sw,data)
+```
+
+</details>
+
+<details>
+    <summary>sync.Pool</summary>
+
+```go
+// version1
+var bufioReaderPool   sync.Pool
+
+func newBufioReader(r io.Reader) *bufio.Reader {
+    if v := bufioReaderPool.Get(); v != nil {
+        br := v.(*bufio.Reader)
+        br.Reset(r)
+        return br
+    }
+    return bufio.NewReader(r)
+}
+
+func putBufioReader(br *bufio.Reader) {
+    br.Reset(nil)
+    bufioReaderPool.Put(br)
+}
+
+// version2
+var copyBufPool = sync.Pool{
+    New: func() interface{} {
+        b := make([]byte, 32*1024)
+        return &b
+    },
+}
+
+bufp := copyBufPool.Get().(*[]byte)
+defer copyBufPool.Put(bufp)
+
+```
+
+</details>
+
+<details>
+    <summary>一些准则</summary>
+
+1. 处理错误的时候避免代码多层嵌套
+2. 使用channel来管理协程
+3. 多考虑用context控制并发
+4. 频繁对象申请和销毁需要考虑复用
+5. 锁比channel高效，前提是合理的使用
 
 </details>
