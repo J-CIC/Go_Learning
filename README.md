@@ -1595,6 +1595,14 @@ JSON采用unmarshal的方式去处理数据的话，对于数字的字段会全�
 
 </details>
 
+<details>
+    <summary>For-range中使用指针</summary>
+
+由于变量只声明了一次，对其取址后，地址其实一致不变，那么若将结果保存起来，出了For循环的时候，保存的值都会指向同一个值    
+详情见[传送门](https://tam7t.com/golang-range-and-pointers/)
+
+</details>
+
 
 ## govendor
 
