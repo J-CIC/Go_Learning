@@ -1588,6 +1588,13 @@ func InverseFuture(a Matrix) chan Matrix {
 
 </details>
 
+<details>
+    <summary>JSON处理中的一些坑</summary>
+
+JSON采用unmarshal的方式去处理数据的话，对于数字的字段会全部转成float64，若想保持原数据的格式需要用json.Decoder去decode对应的内容，详情[看这里](https://ethancai.github.io/2016/06/23/bad-parts-about-json-serialization-in-Golang/)
+
+</details>
+
 
 ## govendor
 
