@@ -72,7 +72,7 @@ gofmt <foldername>
 ```
 </details>
 
-<<details>
+<details>
     <summary>git status与gofmt</summary>
 
 ```bash
