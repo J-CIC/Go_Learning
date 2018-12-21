@@ -72,6 +72,15 @@ gofmt <foldername>
 ```
 </details>
 
+<<details>
+    <summary>git status与gofmt</summary>
+
+```bash
+alias dofmt="git status --porcelain=2 | cut -d' ' -f9- |grep '\.go' |xargs gofmt -w"
+```
+
+</details>
+
 ## 与其他语言不同之处
 
 <details>
