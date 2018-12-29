@@ -24,6 +24,7 @@ Go入门学习
 - [govendor](#govendor)
 - [gin框架相关](#gin框架相关)
 - [最佳实践](#最佳实践)
+- [单元测试](#单元测试)
 <!-- /TOC -->
 
 </details>
@@ -1715,5 +1716,70 @@ defer copyBufPool.Put(bufp)
 3. 多考虑用context控制并发
 4. 频繁对象申请和销毁需要考虑复用
 5. 锁比channel高效，前提是合理的使用
+
+</details>
+
+## 单元测试
+
+<details>
+    <summary>单元测试指令和示例</summary>
+
+```golang
+// in add.go
+package utils
+ 
+ 
+func Add(a,b int64) int64 {
+    return a+b
+}
+
+// in add_test.go
+package utils
+ 
+ 
+import (
+    "testing"
+)
+ 
+ 
+func TestAdd(t *testing.T) {
+    tests := []struct {
+        arg1    int64
+        arg2    int64
+        want    int64
+    }{
+        // 在这里添加测试用例
+        {1, 2, 3},
+    }
+    for _,tt := range tests {
+        res := Add(tt.arg1,tt.arg2)
+        if res != tt.want {
+            // 没通过测试样例
+            t.Errorf("expected: %v, got: %v, test: %+v",tt.want,res,tt)
+        }
+        // 通过do nothing，当然也可以通过t.Log()记录需要的内容
+    }
+}
+```
+
+```bash
+# -v 显示详细信息 -cover=true显示覆盖率 如果add.go依赖了其他文件，可以在后面继续加上依赖的文件
+go test -v -cover=true -coverprofile=c.out ./utils/add_test.go ./utils/add.go
+ 
+# -coverprofil指定了cover详细导出的文件名，后续可以通过以下命令生成html查看覆盖报告
+go tool cover -html=c.out
+ 
+ 
+# 测试一个package
+go test -v -cover=true  ./utils/...
+ 
+ 
+# 执行结果
+=== RUN   TestAdd
+--- PASS: TestAdd (0.00s)
+PASS
+coverage: 100.0% of statements
+ok      Path/To/utils  0.005s  coverage: 100.0% of statements
+```
 
 </details>
