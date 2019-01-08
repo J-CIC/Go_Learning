@@ -82,6 +82,15 @@ alias dofmt="git status --porcelain=2 | cut -d' ' -f9- |grep '\.go' |xargs gofmt
 
 </details>
 
+<details>
+    <summary>确认哪些包不在vendor下而在GOPATH中</summary>
+
+```bash
+govendor list +external
+```
+
+</details>
+
 ## 与其他语言不同之处
 
 <details>
