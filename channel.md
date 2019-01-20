@@ -8,9 +8,7 @@ goversion：1.11.2
 
 - [数据结构](#数据结构)
 - [channel的重要函数](#channel的重要函数)
-
   - [makechan](#makechan)
-  - 
 
 <!-- /TOC -->
 
@@ -164,3 +162,29 @@ const (
 由于alignSize为2^n，那么```x & (2^n-1)```其实就是将高于2^n的高位截断
 
 而-a的计算机实现是原数取反并二进制+1，那么在可表示范围内截断，相加其实就是等于这个二的次幂的。
+
+#### makechan正文
+
+前三个if是用于检查的，第一个检查channel元素大小限制（之所以左移16位估计是因为后续hchan中的elemsize类型是uint16）；第二个检查是检查内存对齐的，这个跟上面的计算hchanSize有关；第三个确认size的值没有溢出，且内存足够分配。
+
+1. 如果size为0或者elem的size为0，那么只分配hchanSize的内存，c.buf实际上不会分配对应的内存
+
+2. 如果类型不包含指针，则将channel和对应的elem所需的内存一次性连续分配
+
+3. 如果类型内包含指针，则将两个内存的申请分开。下面说下这里为什么内存申请分开：
+
+   之所以这么设计，是因为golang采用的三色标记法，golang中的内存分配时采用的如下结构管理span（用于内存管理的基本单位）
+
+   ```go
+   type mcache struct {
+   	alloc [67*2]*mspan // 按class分组的mspan列表
+   }
+   
+   ```
+
+   这里面有个乘2，原因是分了两类span，一类是需要gc扫描的scan和不用gc扫描的noscan，noscan类型分配的内存中的对象是不包含指针类型的，所以三色标记法就不需要再去扫描他引用的对象，可以加快gc速度。再回到这个问题，看到makechan中有一行注释是这样的：```// Hchan does not contain pointers interesting for GC when elements stored in buf do not contain pointers.```
+
+   可以看到其实hchan中并不会有三色标记法中的引用问题，当元素不存在指针类型的时候（hchan中的type类型仍然是指针，查阅网上资料貌似_type可以认为是Go中所有类型的公共描述，所以个人认为这个是程序运行过程中会持久引用的内容，不需要gc，所以hchan也可以视作没有指针的类型），那么只要elem里没有指针类型的时候，就可以放在一起申请内存，这样直接申请一块noscan类型的即可，在gc过程中就不需要再去扫描这一块的内存了。当elem中有指针的时候，hchan还是相当于没有指针的noscan类型，而elem此时是scan的类型，所以将这两个分开进行初始化。这就是这里分开初始化的原因。
+
+然后后面就是继续将size等其他值赋值。
+
