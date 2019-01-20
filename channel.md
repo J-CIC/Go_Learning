@@ -139,6 +139,8 @@ const (
 
 这段代码的意思是，将hchanSize设置为比hchan大的最小的maxAlign的倍数，至于为什么可以达到这个效果，这里有个简单的不算特别严谨的证明：
 
+<details>
+	<summary>证明展开</summary>
 ```a + ( ( -a ) & (alignSize - 1) )```能计算出大于等于a的最小的 ( alignSize的倍数 )，前提条件是alignSize是2的次幂
 
 也就是```a + ( ( -a ) & (alignSize - 1) ) == a + alignSize - a % alignSize```
@@ -162,6 +164,7 @@ const (
 由于alignSize为2^n，那么```x & (2^n-1)```其实就是将高于2^n的高位截断
 
 而-a的计算机实现是原数取反并二进制+1，那么在可表示范围内截断，相加其实就是等于这个二的次幂的。
+</details>
 
 #### makechan正文
 
