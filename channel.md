@@ -76,6 +76,9 @@ type sudog struct {
 
 ### makechan
 
+<details>
+	<summary>展开</summary>
+
 ```go
 func makechan(t *chantype, size int) *hchan {
 	elem := t.elem
@@ -192,3 +195,4 @@ const (
 
 然后后面就是继续将size等其他值赋值。
 
+</details>
