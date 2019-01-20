@@ -1046,7 +1046,7 @@ func main() {
 // Calling test
 // Panicing bad end
 // Test completed
-``` 
+```
 
 > 计算机科学领域的任何问题都可以通过增加一个简介的中间层来解决。  
 > Any problem in computer science can be solved by another layer of indirection.
@@ -1382,7 +1382,7 @@ v,ok := <- ch // 如果v获得到了值那么ok会是true
 for input := range ch {
     process(input)
 }
-```  
+```
 
 </details>
 
@@ -1401,7 +1401,7 @@ select {
         // 没有一个通道就绪的时候
         ...
 }
-```  
+```
 注意select并不是顺序的选择，当多个channel就绪的时候是**(伪)随机**的选择一个，如果都没准备好则走default。通过这种方式，配合上无限循环并在default中写break条件，就可以保证使用通道过程中不被阻塞。  
 Note：如果select没有default时，有可能一直阻塞。   
 <details>
@@ -1448,7 +1448,7 @@ func suck(ch1, ch2 chan int) {
         }
     }
 }
-```  
+```
 
 </details>
 
@@ -1480,7 +1480,7 @@ case <-ticker.C:
 default: // no value ready to be received
     ...
 }
-```  
+```
 
 超时的示例：  
 ```go
@@ -1493,7 +1493,7 @@ case <-time.After(timeoutNs):
     // call timed out
     break
 }
-```  
+```
 书里说：  
 > 注意缓冲大小设置为 1 是必要的，可以避免协程死锁以及确保超时的通道可以被垃圾回收（主要是垃圾回收，func中的内存引用将一直无法回收直到程序停止）。
 
