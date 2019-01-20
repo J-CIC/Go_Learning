@@ -141,6 +141,7 @@ const (
 
 <details>
 	<summary>证明展开</summary>
+	
 ```a + ( ( -a ) & (alignSize - 1) )```能计算出大于等于a的最小的 ( alignSize的倍数 )，前提条件是alignSize是2的次幂
 
 也就是```a + ( ( -a ) & (alignSize - 1) ) == a + alignSize - a % alignSize```
