@@ -244,8 +244,8 @@ func sendDirect(t *_type, sg *sudog, src unsafe.Pointer) {
 	// be updated if the destination's stack gets copied (shrunk).
 	// So make sure that no preemption points can happen between read & use.
 	dst := sg.elem
-    // 这里启用了内存屏障防止乱序执行后，导致先memmove，再执行dst := sg.elem
-    // 使得一些操作修改了原来的elem而没有生效到dst上
+	// 这里启用了内存屏障防止乱序执行后，导致先memmove，再执行dst := sg.elem
+	// 使得一些操作修改了原来的elem而没有生效到dst上
 	typeBitsBulkBarrier(t, uintptr(dst), uintptr(src), t.size)
 	// No need for cgo write barrier checks because dst is always
 	// Go memory.
