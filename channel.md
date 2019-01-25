@@ -199,3 +199,81 @@ const (
 然后后面就是继续将size等其他值赋值。
 
 </details>
+
+### chansend
+
+<details> 
+	<summary>展开</summary>
+
+```go
+/*
+ * generic single channel send/recv
+ * If block is not nil,
+ * then the protocol will not
+ * sleep but return if it could
+ * not complete.
+ *
+ * sleep can wake up with g.param == nil
+ * when a channel involved in the sleep has
+ * been closed.  it is easiest to loop and re-run
+ * the operation; we'll see that it's now closed.
+ */
+func chansend(c *hchan, ep unsafe.Pointer, block bool, callerpc uintptr) bool {...}
+```
+
+发送函数中的block主要是来自select的，如果一个channel来自于select，那么这个block参数会为false，这样就不会在select的时候被阻塞住。
+
+代码中频繁用到的raceenabled常量，是用在go build -race时才会启用的，用于检测是否有race态，一般为false值，所以可以直接忽略这部分代码。
+
+跟着继续往下走，如果channel已经关闭，那么直接Panic掉这个goroutine。
+
+正常发送会有三种情况：
+
+1. recvq队列中有空闲的接受者，那么直接发送给他
+2. 如果队列未满，直接塞进队列中
+3. 如果队列满了，且在select中，直接return false；否则阻塞队列
+
+代码中也主要是这三段的不同处理，主要是代码中的一些细节的处理，第一种情况的话调用链是```send()```->```sendDirect()```代码如下：
+
+```go
+// runtime/chan.go#305
+func sendDirect(t *_type, sg *sudog, src unsafe.Pointer) {
+	// src is on our stack, dst is a slot on another stack.
+
+	// Once we read sg.elem out of sg, it will no longer
+	// be updated if the destination's stack gets copied (shrunk).
+	// So make sure that no preemption points can happen between read & use.
+	dst := sg.elem
+    // 这里启用了内存屏障防止乱序执行后，导致先memmove，再执行dst := sg.elem
+    // 使得一些操作修改了原来的elem而没有生效到dst上
+	typeBitsBulkBarrier(t, uintptr(dst), uintptr(src), t.size)
+	// No need for cgo write barrier checks because dst is always
+	// Go memory.
+	memmove(dst, src, t.size)
+}
+```
+
+第二种情况中代码如下
+
+```go
+if c.qcount < c.dataqsiz {
+    // Space is available in the channel buffer. Enqueue the element to send.
+    qp := chanbuf(c, c.sendx)
+    if raceenabled {
+        // ...由于raceenabled在没指定情况下为false，忽略
+    }
+    typedmemmove(c.elemtype, qp, ep)
+    c.sendx++
+    if c.sendx == c.dataqsiz {
+        c.sendx = 0
+    }
+    c.qcount++
+    unlock(&c.lock)
+    return true
+}
+```
+
+
+
+</details>
+
